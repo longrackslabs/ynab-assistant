@@ -7,7 +7,7 @@ import {compareStatement} from '../src/statement.js';
 import {previewClearStatus, verifyFreshPreview} from '../src/preview.js';
 
 const tx = (id, amount, extra = {}) => ({id, amount, date: '2026-10-05', cleared: 'uncleared', payee_name: 'Example Shop', ...extra});
-const snap = (rows, extra = {}) => ({account: {id: 'test-account', type: 'checking', cleared_balance: 100000, uncleared_balance: rows.filter(t => t.cleared === 'uncleared' && !t.deleted).reduce((s,t) => s+t.amount, 0)}, transactions: rows, history_complete: true, ...extra});
+const snap = (rows, extra = {}) => ({account: {id: 'test-account', type: 'checking', cleared_balance: 100000, uncleared_balance: rows.filter(t => t.cleared === 'uncleared' && !t.deleted).reduce((s,t) => s+t.amount, 0)}, transactions: rows, history_complete: true, retrieval: {date_scope:'explicit_full_history', row_limit_reached:false}, ...extra});
 const limits = {max_candidates: 20, max_states: 100000, max_operations: 1000000, max_milliseconds: 5000};
 
 test('money uses exact signed milliunits and rejects malformed or unsafe amounts', () => {
@@ -51,6 +51,24 @@ test('incomplete history, inconsistent totals and already balanced never claim a
 });
 test('duplicate and cross-account snapshots are rejected', () => {
   for (const rows of [[tx('a',1),tx('a',2)],[tx('a',1,{account_id:'other'})]]) assert.throws(()=>analyzeReconciliation({snapshot:snap(rows),bank_balance:'100'}));
+});
+test('default date windows, missing provenance and row caps block completeness despite matching totals', () => {
+  for (const retrieval of [undefined, {date_scope:'default_window',row_limit_reached:false}, {date_scope:'unknown',row_limit_reached:false}, {date_scope:'explicit_full_history',row_limit_reached:true}]) {
+    const snapshot=snap([tx('only-visible',-10000)],{retrieval});
+    const result=analyzeReconciliation({snapshot,bank_balance:'90'});
+    assert.equal(result.uncleared_sum_matches_account,true);
+    assert.equal(result.input_complete,false); assert.equal(result.unique_within_complete_search,false);
+    assert.ok(result.warnings.some(warning=>warning.includes('date windows')));
+    assert.equal(compareStatement(statement(snapshot.transactions,[],{snapshot})).history_complete,false);
+  }
+  const complete=analyzeReconciliation({snapshot:snap([tx('a',-10000)]),bank_balance:'90'});
+  assert.equal(complete.input_complete,true); assert.equal(complete.unique_within_complete_search,true);
+});
+test('snapshot as_of accepts a calendar date and explains timestamp rejection', () => {
+  const snapshot=snap([],{as_of:'2026-10-17'});
+  assert.equal(analyzeReconciliation({snapshot,bank_balance:'100'}).already_balanced,true);
+  snapshot.as_of='2026-10-17T12:30:00Z';
+  assert.throws(()=>analyzeReconciliation({snapshot,bank_balance:'100'}),/YYYY-MM-DD/);
 });
 test('transposition is a specific digit swap; divisibility by nine is only a clue', () => {
   const snapshot=snap([tx('payment',237000,{cleared:'cleared'})]);

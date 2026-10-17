@@ -1,4 +1,4 @@
-import { analysisInputSchema, validateSnapshot } from './schema.js';
+import { analysisInputSchema, validateSnapshot, retrievalScopeVerified } from './schema.js';
 import { digitSwap, displayMoney, exact, parseMoney, sum } from './money.js';
 import { findSubsets } from './search.js';
 
@@ -17,7 +17,8 @@ export function analyzeReconciliation(input) {
   if (nonzero.length > 5000) throw new Error('More than 5000 uncleared entries: narrow the problem using posted bank records');
   const pendingSum = sum(pending.map(tx => tx.amount));
   const consistent = pendingSum === snapshot.account.uncleared_balance;
-  const inputComplete = snapshot.history_complete && consistent;
+  const retrievalVerified = retrievalScopeVerified(snapshot);
+  const inputComplete = snapshot.history_complete && retrievalVerified && consistent;
   const result = findSubsets(nonzero.map(tx => tx.amount), delta, args.limits);
   const candidates = result.masks.map(mask => {
     const selected = nonzero.filter((_, i) => mask & (1n << BigInt(i)));
@@ -35,12 +36,15 @@ export function analyzeReconciliation(input) {
     account_id: snapshot.account.id, bank_signed_balance: bank, cleared_balance: snapshot.account.cleared_balance,
     difference: delta, difference_display: displayMoney(delta), already_balanced: delta === 0,
     uncleared_count: pending.length, input_complete: inputComplete, uncleared_sum_matches_account: consistent,
+    retrieval_scope_verified: retrievalVerified,
     search: {complete: result.complete, candidate_list_truncated: result.truncated, limit_reason: result.reason, operations: result.operations},
     candidates, unique_within_complete_search: inputComplete && result.complete && !result.truncated && candidates.length === 1,
     difference_divisible_by_nine_minor_units: delta !== 0 && delta % scale === 0 && Math.abs(delta / scale) % 9 === 0,
     transposition_candidates: swaps.slice(0, 20), transposition_candidates_truncated: swaps.length > 20,
     posting_verified: false, can_auto_clear: false,
-    warnings: [!inputComplete && 'History completeness or snapshot consistency is unverified.', result.reason && delta !== 0 && 'Search stopped at a resource limit; no-match is not exhaustive.',
+    warnings: [!inputComplete && 'History completeness or snapshot consistency is unverified.',
+      !retrievalVerified && 'Full-history retrieval is unverified. Upstream default date windows can omit older uncleared entries even below the row limit.',
+      result.reason && delta !== 0 && 'Search stopped at a resource limit; no-match is not exhaustive.',
       'Arithmetic matches are candidates, not proof of bank posting.'].filter(Boolean),
   };
 }

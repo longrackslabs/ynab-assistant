@@ -37,6 +37,8 @@ npm run benchmark
 
 The demo uses only synthetic data. The benchmark exercises a 1,000-entry register and reports search limits rather than claiming an exhaustive answer.
 
+Snapshots use calendar dates such as `as_of: "2026-10-17"`, never timestamps. Completeness claims require explicit retrieval provenance as shown in the demo. An upstream response below its row cap can still omit old entries because of a default date window. See the workflow reference for the full retrieval check.
+
 Configure a stdio MCP named `ynab-analysis` in your agent host, using an absolute Node path and checkout path:
 
 ```json

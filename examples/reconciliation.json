@@ -2,6 +2,7 @@
   "snapshot": {
     "account": {"id": "demo-card", "name": "Example Card", "type": "creditCard", "cleared_balance": -100000, "uncleared_balance": -40000},
     "history_complete": true,
+    "retrieval": {"date_scope": "explicit_full_history", "row_limit_reached": false},
     "transactions": [
       {"id": "demo-groceries", "date": "2026-10-01", "amount": -25000, "cleared": "uncleared", "payee_name": "Example Grocer"},
       {"id": "demo-subscription", "date": "2026-10-02", "amount": -15000, "cleared": "uncleared", "payee_name": "Example Subscription"}

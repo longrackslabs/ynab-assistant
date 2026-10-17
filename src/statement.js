@@ -1,4 +1,4 @@
-import { statementInputSchema, validateSnapshot } from './schema.js';
+import { statementInputSchema, validateSnapshot, retrievalScopeVerified } from './schema.js';
 import { sum } from './money.js';
 import { view } from './analyze.js';
 
@@ -41,7 +41,7 @@ export function compareStatement(input) {
   const calculated = arithmeticAvailable ? sum([args.opening_balance, ...bank.map(row => row.amount)]) : null;
   return {
     account_id: snapshot.account.id, comparison_complete: complete, comparisons,
-    history_complete: snapshot.history_complete,
+    history_complete: snapshot.history_complete && retrievalScopeVerified(snapshot),
     statement_arithmetic: {checked: arithmeticAvailable, calculated_closing_balance: calculated, matches: arithmeticAvailable ? calculated === args.closing_balance : null},
     matches,
     unmatched_bank_entries: bank.filter(row => !matchedBank.has(row.id)).map(row => ({...row, candidate_transaction_ids: edges.get(row.id) ?? []})),
@@ -50,7 +50,7 @@ export function compareStatement(input) {
     can_auto_clear: false,
     warnings: ['Unmatched entries are investigation leads, not proof of a missing or duplicate transaction.',
       !complete && 'Comparison limit reached. Matches withheld.',
-      !snapshot.history_complete && 'Fetched YNAB history is incomplete.',
+      (!snapshot.history_complete || !retrievalScopeVerified(snapshot)) && 'Full YNAB history is unverified; default date windows and row limits must be checked.',
       snapshot.as_of !== args.end_date && 'Current account balances must not be compared directly with a past statement closing balance.'].filter(Boolean),
   };
 }

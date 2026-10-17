@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 export const amountSchema = z.number().int().safe();
-export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => {
+export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD, not an ISO timestamp').refine(value => {
   const date = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
-}, 'Invalid calendar date');
+}, 'Invalid calendar date').describe('Calendar date in YYYY-MM-DD format, for example 2026-10-17. Do not pass a timestamp.');
 export const transactionSchema = z.object({
   id: z.string().min(1), account_id: z.string().optional(), date: dateSchema,
   amount: amountSchema, cleared: z.enum(['cleared', 'uncleared', 'reconciled']),
@@ -19,8 +19,16 @@ export const snapshotSchema = z.object({
   }).passthrough(),
   transactions: z.array(transactionSchema).max(20000),
   history_complete: z.boolean().default(false),
-  as_of: dateSchema.optional(),
+  retrieval: z.object({
+    date_scope: z.enum(['explicit_full_history', 'default_window', 'unknown']),
+    row_limit_reached: z.boolean(),
+  }).strict().optional().describe('Retrieval provenance. Only explicit_full_history with row_limit_reached false permits a completeness claim. Check upstream since_date defaults; a response below the row cap is insufficient.'),
+  as_of: dateSchema.optional().describe('Snapshot calendar date in YYYY-MM-DD format, for example 2026-10-17; omit if unknown. ISO timestamps are invalid.'),
 }).strict();
+
+export function retrievalScopeVerified(snapshot) {
+  return snapshot.retrieval?.date_scope === 'explicit_full_history' && snapshot.retrieval.row_limit_reached === false;
+}
 export const limitsSchema = z.object({
   max_candidates: z.number().int().min(1).max(20).default(5),
   max_states: z.number().int().min(1).max(100000).default(30000),

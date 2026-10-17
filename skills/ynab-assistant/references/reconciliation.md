@@ -4,7 +4,13 @@
 
 Discover the YNAB data MCP's actual tool schemas. Server names and tool names differ. Fetch the selected account and all relevant transactions, including all uncleared entries. Check pagination, default limits, deleted records, account identity, and whether the response is a delta or a full collection. A short response is not evidence of completeness. Do not fetch only recent entries and label the history complete.
 
+Check implicit date filters separately from row limits. In the tested YNAB data MCP, omitting `since_date` returned only one year of history, even with a high `max_results`. Supply an explicit `since_date` at or before the account's earliest register activity, or use an upstream endpoint verified to return every uncleared entry without a date window. Resolve all row caps or pagination. If the available tools cannot establish full coverage, keep history completeness unverified and explain the limitation.
+
 Build a snapshot with `account`, `transactions`, `history_complete`, and optional `as_of`. Account fields are `id`, `type`, `cleared_balance`, `uncleared_balance`, and optional `balance`. Transaction fields are `id`, `date`, `amount`, `cleared`, and optionally `account_id`, `payee_name`, `memo`, and `deleted`. Preserve integer milliunits from YNAB: 1000 is one currency unit. Preserve signed amounts. Parent split transactions count once; do not also include subtransactions as separate account activity. Scheduled future occurrences are not posted register entries.
+
+All date fields, including `snapshot.as_of`, use `YYYY-MM-DD`, for example `2026-10-17`. Do not pass an ISO timestamp such as `2026-10-17T12:30:00Z`. `as_of` is optional; omit it if the snapshot date is unknown. It describes the snapshot date, not the historical statement cutoff.
+
+Include `retrieval: {date_scope: "explicit_full_history", row_limit_reached: false}` only after establishing full history coverage. Use `date_scope: "default_window"` for an upstream default date filter, or `"unknown"` if unresolved. Set `row_limit_reached: true` if a result cap remains unresolved. Missing provenance, a default window, or a reached row limit prevents the engine from claiming complete input or a unique full-population solution, even when `history_complete` is true and uncleared totals agree. These are caller-provided provenance assertions, not independently verified API evidence.
 
 Set `history_complete` true only after verifying the fetched population covers the task. Account totals and uncleared sums are a consistency check, not proof that pagination is complete. Fetch balances and transactions close together; refresh if concurrent changes make them inconsistent.
 
