@@ -1,0 +1,20 @@
+{
+  "name": "ynab-assistant-local-alpha",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "description": "A portable YNAB assistant skill and local reconciliation analysis MCP",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "bin": { "ynab-assistant": "bin/ynab-assistant.js" },
+  "scripts": {
+    "test": "node --test",
+    "demo": "node bin/ynab-assistant.js demo",
+    "mcp": "node bin/ynab-assistant.js mcp",
+    "benchmark": "node scripts/benchmark.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "zod": "4.4.3"
+  }
+}
