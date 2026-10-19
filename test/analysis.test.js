@@ -5,10 +5,16 @@ import {findSubsets} from '../src/search.js';
 import {analyzeReconciliation} from '../src/analyze.js';
 import {compareStatement} from '../src/statement.js';
 import {previewClearStatus, verifyFreshPreview} from '../src/preview.js';
+import {requireSupportedNode} from '../src/runtime.js';
 
 const tx = (id, amount, extra = {}) => ({id, amount, date: '2026-10-05', cleared: 'uncleared', payee_name: 'Example Shop', ...extra});
 const snap = (rows, extra = {}) => ({account: {id: 'test-account', type: 'checking', cleared_balance: 100000, uncleared_balance: rows.filter(t => t.cleared === 'uncleared' && !t.deleted).reduce((s,t) => s+t.amount, 0)}, transactions: rows, history_complete: true, retrieval: {date_scope:'explicit_full_history', row_limit_reached:false}, ...extra});
 const limits = {max_candidates: 20, max_states: 100000, max_operations: 1000000, max_milliseconds: 5000};
+
+test('unsupported runtimes get an actionable failure before tests or MCP startup', () => {
+  for (const version of ['20.20.1','18.0.0','invalid']) assert.throws(()=>requireSupportedNode(version),/requires Node.js 22/);
+  for (const version of ['22.0.0','24.22.0']) assert.doesNotThrow(()=>requireSupportedNode(version));
+});
 
 test('money uses exact signed milliunits and rejects malformed or unsafe amounts', () => {
   for (const [text, n] of [['0',0], ['-0.001',-1], ['+123.45',123450], ['936.90',936900]]) { assert.equal(parseMoney(text), n); assert.equal(parseMoney(displayMoney(n)), n); }

@@ -2,8 +2,10 @@
 import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { analyzeReconciliation } from '../src/analyze.js';
+import { requireSupportedNode } from '../src/runtime.js';
 
 try {
+  requireSupportedNode();
   const command = process.argv[2];
   if (command === 'mcp') {
     const { startServer } = await import('../src/server.js'); await startServer();

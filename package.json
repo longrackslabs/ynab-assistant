@@ -8,10 +8,10 @@
   "engines": { "node": ">=22" },
   "bin": { "ynab-assistant": "bin/ynab-assistant.js" },
   "scripts": {
-    "test": "node --test",
+    "test": "node scripts/check-runtime.js && node --test --test-reporter=spec",
     "demo": "node bin/ynab-assistant.js demo",
     "mcp": "node bin/ynab-assistant.js mcp",
-    "benchmark": "node scripts/benchmark.js"
+    "benchmark": "node scripts/check-runtime.js && node scripts/benchmark.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
