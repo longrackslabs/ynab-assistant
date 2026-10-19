@@ -74,7 +74,13 @@ The solver caps states, operations, elapsed time and returned candidates. An inc
 
 Statement matching currently requires exact normalized merchant text, signed amount, and a nearby date. It intentionally leaves merchant aliases and duplicate candidates for review. PDF extraction, bank access, automatic scheduling, and a general write gateway are not included.
 
-Verified with Linux and Node 24 using a real stdio MCP client. Other hosts and operating systems need compatibility testing. [Development roadmap](ROADMAP.md), [privacy and security](SECURITY.md), and [contributing](CONTRIBUTING.md).
+### Tested agent and runtime
+
+Live workflow testing used Codex with GPT-6.1-Sol at medium reasoning effort, as reported by the operator, on Linux. The analysis server was also verified with Node 24 using a real stdio MCP client.
+
+The project is designed for other MCP-capable agents, but MCP support alone does not guarantee the full workflow. A host must load the skill and its reference, connect to both the YNAB data MCP and this analysis MCP, and support their tool schemas and transports. Optional write actions also require the corresponding data-MCP tools and permissions. Configuration and skill installation vary by host.
+
+Other agents, models, hosts, and operating systems have not been validated. [Development roadmap](ROADMAP.md), [privacy and security](SECURITY.md), and [contributing](CONTRIBUTING.md).
 
 ## Provenance
 
