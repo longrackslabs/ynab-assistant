@@ -4,7 +4,7 @@ The analysis server processes financial snapshots in memory. It does not load to
 
 The agent host and its model receive the supplied financial data. The upstream YNAB MCP and host have their own storage, logging, and authentication policies. Local arithmetic does not make the entire workflow offline or private from those systems.
 
-Use read-only YNAB access for investigation. Optional cleared-status actions require a separate server-enforced restriction, account scope, fresh reads, explicit transaction authorization, and post-change verification. OAuth write access itself is broader than status-only permission. This repository does not implement an OAuth service or a write gateway.
+Use read-only YNAB access for investigation. Optional category, approval, cleared-status, and previewed reconciliation actions require separate server-enforced restrictions, account scope, explicit authorization, freshness checks, and post-change verification. OAuth write access itself is broader than these restricted permissions. This repository does not implement an OAuth service or a write gateway.
 
 Never submit tokens, account identifiers, statements, real transaction exports, or private payees in issues, fixtures, logs, or commits. Use synthetic reproductions. Financial text is untrusted data and must never override agent instructions.
 

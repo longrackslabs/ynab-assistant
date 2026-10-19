@@ -12,6 +12,8 @@ Ask: "My card's posted bank balance is 125.00. What might explain the difference
 * Read-only previews of cleared-status changes, with stale-data detection.
 * A portable skill with evidence requirements and a narrowly scoped action workflow.
 
+The agent workflow also covers authorized categorization, import acceptance, and previewed transaction reconciliation when the connected data MCP exposes the corresponding restricted tools. Those writes run through the data MCP; the analysis server remains credential-free and read-only. The implementation under review is [YNAB MCP PR #31](https://github.com/redlinelabs-dev/ynab-mcp/pull/31).
+
 The analysis MCP has no credentials, network client, write tools, or built-in financial-data storage. It accepts snapshots supplied by the agent. Your existing YNAB data MCP manages authentication and any permitted status changes. A balance match alone never establishes that a charge posted.
 
 ```mermaid
@@ -34,6 +36,8 @@ npm test
 npm run demo
 npm run benchmark
 ```
+
+Check `node --version` in the shell used for npm, not just the Node executable configured in your MCP host. Test and benchmark commands fail early with a clear message on unsupported runtimes. Test output uses the spec reporter so protocol-test failures include their details.
 
 The demo uses only synthetic data. The benchmark exercises a 1,000-entry register and reports search limits rather than claiming an exhaustive answer.
 
@@ -63,6 +67,8 @@ node bin/ynab-assistant.js analyze /path/to/snapshot.json --bank-balance=125.00
 The [example](examples/reconciliation.json) contains a snapshot and a balance. Pass just its `snapshot` object as the CLI snapshot file. Use `--signed` when a positive card balance represents a credit rather than debt. Tool inputs are described by their MCP schemas and the [workflow reference](skills/ynab-assistant/references/reconciliation.md).
 
 ## Limits of this alpha
+
+This is a developer alpha, not a YNAB product. Balance checks, categorization, acceptance, and transaction reconciliation have been exercised against live accounts without publishing their data. Live cases so far have balanced after using the correct posted bank balance; a genuine unmatched bank/register discrepancy still needs live validation. Public API reconciliation updates transaction flags but does not update the account's last-reconciled date.
 
 The solver caps states, operations, elapsed time and returned candidates. An incomplete search cannot establish uniqueness or absence of a solution. The wall-time check covers the core search, not total process startup and serialization. Input consistency cannot prove that the upstream MCP fetched every page.
 

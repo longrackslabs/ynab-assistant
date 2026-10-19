@@ -16,6 +16,8 @@ Set `history_complete` true only after verifying the fetched population covers t
 
 ## Balance-only investigation
 
+Some banks display a balance that includes pending debits or card payments. Confirm the posted ledger balance before diagnosing missing imports. Pending restaurant charges may change when tips post. Leave pending entries uncleared and verify final posted amounts before clearing them; do not create an adjustment to force agreement.
+
 Pass the snapshot and decimal `bank_balance` string to `analyze_reconciliation`. Positive credit-card debt is converted to a negative YNAB balance by default. Use `bank_balance_convention: signed` for an already signed balance or positive credit balance. The target is bank posted balance minus YNAB cleared balance, not working balance.
 
 Review the search's completeness, truncation, and input-completeness fields before describing a result. No match after a resource limit does not prove no solution exists. Zero difference means the cleared balance agrees; uncleared entries may legitimately remain pending. Do not clear offsetting entries just because they net to zero.
@@ -39,3 +41,21 @@ Use `preview_clear_status` with snapshot, specific `transaction_ids`, and `desir
 Re-fetch the account and selected transactions; regenerate the preview and compare its `plan_id` with the approved preview. Stop if it differs. Use only a status-specific tool that rejects other edits and reconciled rows. The companion analysis server cannot apply anything. A broad update tool is not a substitute for server-enforced field restrictions.
 
 Verify selected statuses and cleared/uncleared/working balances after application. On partial failure, report exactly what changed and re-read before proceeding. Do not retry blindly or automatically reverse user changes. The YNAB UI may require a refresh to display API changes.
+
+## Authorized categories and acceptance
+
+When the data MCP exposes `set_transaction_category`, identify the exact authorized transactions and target category. Exclude account transfers that appear uncategorized because they have no expense category. Re-read each entry, verify identity and financial fields, and supply its current expected_category_id (null when uncategorized). The restricted tool can reject transfers, splits, and reconciled entries; respect its scope rather than replacing it with a general update.
+
+Import acceptance uses the approved flag and is separate from categorization or clearing. When acceptance is authorized and `approve_transaction` is exposed, re-read the entry and pass its reviewed expected_category_id. This action sets approved=true and cannot unapprove. Categorization alone does not authorize acceptance.
+
+For either action, process sequentially, track successful IDs, and stop on unexpected state or failure. Re-read uncertain operations before retrying. Verify saved categories/approval and unchanged amounts, dates, payees, account, cleared status, memo, and account balances.
+
+## Previewed transaction reconciliation
+
+When available, use `preview_account_reconciliation` with the exact account and signed posted bank balance in integer milliunits. Card debt is negative. Inspect eligible entries, balance/history consistency, blockers, and operation limits. The current companion data MCP refuses more than 25 eligible entries. Do not clear pending entries or approve transactions to force a preview to pass.
+
+Only apply reconciliation the user has authorized for that account and balance. Call `reconcile_account` with the reviewed plan_id and the same account and bank balance. It rejects changed snapshots and only moves already-cleared, approved entries to reconciled. Existing authorization to reconcile the specified account need not be requested again, but unresolved posting ambiguity must be resolved before writing.
+
+Check the returned status, verified IDs, balance preservation, and untouched transactions. Partial failures and ambiguous timeouts can leave successful writes behind. Re-read before deciding on a retry; never blindly retry or undo a partial reconciliation.
+
+The public YNAB API has no dedicated account reconciliation endpoint or setter for last_reconciled_at. Live validation found that transaction reconciliation flags changed while the account date did not. Report those outcomes separately. The user may finish the native account UI workflow to update that date; do not claim the public API reproduced the complete account button.
