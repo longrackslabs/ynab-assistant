@@ -22,7 +22,7 @@ Pass the snapshot and decimal `bank_balance` string to `analyze_reconciliation`.
 
 Review the search's completeness, truncation, and input-completeness fields before describing a result. No match after a resource limit does not prove no solution exists. Zero difference means the cleared balance agrees; uncleared entries may legitimately remain pending. Do not clear offsetting entries just because they net to zero.
 
-The transposition report tests actual swapped digits. A difference divisible by nine minor units is only a clue, not a diagnosis. A previously reconciled row can still be wrong, but this skill does not change it.
+The transposition report tests actual swapped digits. A difference divisible by nine minor units is only a clue, not a diagnosis. A previously reconciled row can still contain an incorrect amount; amount corrections are outside this skill. Category-only corrections are independent of reconciliation status when supported by the restricted tool.
 
 Without the companion tools, use a reliable exact-integer local calculation, preserve the same evidence boundaries, and disclose any search limits. Do not improvise credential extraction or bypass a restricted MCP with direct API calls.
 
@@ -44,7 +44,7 @@ Verify selected statuses and cleared/uncleared/working balances after applicatio
 
 ## Authorized categories and acceptance
 
-When the data MCP exposes `set_transaction_category`, identify the exact authorized transactions and target category. Exclude account transfers that appear uncategorized because they have no expense category. Re-read each entry, verify identity and financial fields, and supply its current expected_category_id (null when uncategorized). The restricted tool can reject transfers, splits, and reconciled entries; respect its scope rather than replacing it with a general update.
+When the data MCP exposes `set_transaction_category`, identify the exact authorized transactions and target category. Exclude account transfers that appear uncategorized because they have no expense category. Re-read each entry, verify identity and financial fields, and supply its current expected_category_id (null when uncategorized). Reconciled status does not itself prevent a category-only correction when the server supports it. Preserve approval, reconciliation state, amounts, dates, payees, memos, and account balances. Respect any server rejection rather than replacing the restricted tool with a general update.
 
 Import acceptance uses the approved flag and is separate from categorization or clearing. When acceptance is authorized and `approve_transaction` is exposed, re-read the entry and pass its reviewed expected_category_id. This action sets approved=true and cannot unapprove. Categorization alone does not authorize acceptance.
 
@@ -59,3 +59,9 @@ Only apply reconciliation the user has authorized for that account and balance. 
 Check the returned status, verified IDs, balance preservation, and untouched transactions. Partial failures and ambiguous timeouts can leave successful writes behind. Re-read before deciding on a retry; never blindly retry or undo a partial reconciliation.
 
 The public YNAB API has no dedicated account reconciliation endpoint or setter for last_reconciled_at. Live validation found that transaction reconciliation flags changed while the account date did not. Report those outcomes separately. The user may finish the native account UI workflow to update that date; do not claim the public API reproduced the complete account button.
+
+## Category creation
+
+When the user explicitly requests a new category, resolve the exact existing group and desired name through fresh category reads. Use `create_category` only when the data MCP separately enables category creation. Restricted mode accepts only name, category_group_id, and optional budget_id; it does not enable group creation, category editing, targets, deletion, or allocation.
+
+Check for an existing matching name, including hidden entries. Choose an active, visible, non-internal group. Create once, then re-read and verify the unique new ID, name, group, and active state. After an error or timeout, re-read before considering a retry; concurrent requests can still create duplicates. Report a missing tool rather than bypassing restrictions.
